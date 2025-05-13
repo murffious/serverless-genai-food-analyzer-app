@@ -43,6 +43,7 @@ export class FoodAnalyzerStack extends Stack {
   public getIngredients: IFunction;
   public getStepsRecipe: IFunction;
   public productSummary: IFunction;
+  public urlContentAnalysisFunction: IFunction;
   constructor(scope: Construct, id: string, stage: string, props: StackProps) {
     super(scope, id, props);
 
@@ -517,7 +518,7 @@ export class FoodAnalyzerStack extends Stack {
     const recipeImageIngredientsFunctionUrl =
       recipeImageIngredientsFunction.addFunctionUrl({
         authType: lambda.FunctionUrlAuthType.AWS_IAM,
-      });
+    });
 
     const recipeProposalsFunctionUrl = recipeProposalsFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.AWS_IAM,
@@ -724,6 +725,7 @@ export class FoodAnalyzerStack extends Stack {
         this.getStepsRecipe,
         this.productSummary,
         this.generateRecipe,
+        this.urlContentAnalysisFunction,
       ],
     });
 
@@ -731,6 +733,114 @@ export class FoodAnalyzerStack extends Stack {
 
   const loadDatabase = new LoadDatabase(this, "LoadSF", openFoodFactsProductsTable, this.stackName);
 
+  // Create DynamoDB tables for URL Content Analysis
+  const foodItemsTable = new dynamodb.Table(this, "FoodItemsTable", {
+    partitionKey: {
+      name: "id",
+      type: dynamodb.AttributeType.STRING,
+    },
+    billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    encryption: TableEncryption.DEFAULT,
+  });
+
+  const foodTipsTable = new dynamodb.Table(this, "FoodTipsTable", {
+    partitionKey: {
+      name: "id",
+      type: dynamodb.AttributeType.STRING,
+    },
+    billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    encryption: TableEncryption.DEFAULT,
+  });
+
+  // URL Content Analysis Lambda Function
+  const urlContentAnalysisFunction = new nodejs.NodejsFunction(
+    this,
+    "UrlContentAnalysisFunction",
+    {
+      entry: path.join(__dirname, "../lambda/url_content_analysis/index.ts"),
+      runtime: lambda.Runtime.NODEJS_22_X,
+      role: lambdaRole,
+      timeout: Duration.minutes(5),
+      memorySize: 1024,
+      layers: [powerToolsTypeScriptLayer],
+      tracing: Tracing.ACTIVE,
+      logRetention: RetentionDays.ONE_WEEK,
+      retryAttempts: 0,
+      environment: {
+        POWERTOOLS_SERVICE_NAME: "food-lens",
+        POWERTOOLS_LOG_LEVEL: "DEBUG",
+        FOOD_ITEMS_TABLE: foodItemsTable.tableName,
+        TIPS_TABLE: foodTipsTable.tableName,
+        REGION: Stack.of(this).region,
+      },
+      bundling: {
+        minify: false,
+        externalModules: ["@aws-sdk/client-bedrock-runtime", "aws-lambda"],
+      },
+    }
+  );
+
+  // Grant Lambda permissions to access DynamoDB tables
+  foodItemsTable.grantWriteData(urlContentAnalysisFunction);
+  foodTipsTable.grantWriteData(urlContentAnalysisFunction);
+
+  // Add required policies to Lambda role
+  urlContentAnalysisFunction.addToRolePolicy(
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+      ],
+      resources: ["arn:aws:logs:*:*:*"],
+    })
+  );
+
+  // Add Bedrock permissions
+  urlContentAnalysisFunction.addToRolePolicy(
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ["bedrock:InvokeModel"],
+      resources: [
+        `arn:${Aws.PARTITION}:bedrock:${Aws.REGION}::foundation-model/*`,
+      ],
+    })
+  );
+
+  // Create Function URL with IAM authentication
+  const urlContentAnalysisFunctionUrl = urlContentAnalysisFunction.addFunctionUrl({
+    authType: lambda.FunctionUrlAuthType.AWS_IAM,
+    invokeMode: lambda.InvokeMode.BUFFERED,
+  });
+
+  // Add Lambda URL to list of resources auth function can invoke
+  authFunction.addToRolePolicy(
+    new iam.PolicyStatement({
+      sid: "AllowInvokeUrlContentAnalysisFunctionUrl",
+      effect: iam.Effect.ALLOW,
+      actions: ["lambda:InvokeFunctionUrl"],
+      resources: [urlContentAnalysisFunctionUrl.functionArn],
+      conditions: {
+        StringEquals: { "lambda:FunctionUrlAuthType": "AWS_IAM" },
+      },
+    })
+  );
+
+  // Add behavior to CloudFront distribution
+  distribution.addBehavior(
+    "/urlAnalysis",
+    new HttpOrigin(Fn.select(2, Fn.split("/", urlContentAnalysisFunctionUrl.url))),
+    getBehaviorOptions
+  );
+
+  // Export the function URL for reference
+  new CfnOutput(this, "UrlContentAnalysisFunctionUrl", {
+    value: urlContentAnalysisFunctionUrl.url,
+  });
+
+  // Expose function as a property of the stack
+  this.urlContentAnalysisFunction = urlContentAnalysisFunction;
   }
 
   /**

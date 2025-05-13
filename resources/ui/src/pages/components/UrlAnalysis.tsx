@@ -86,7 +86,7 @@ const UrlAnalysis: React.FC = () => {
           <SpaceBetween direction="horizontal" size="xs">
             {item.attributes.map((attribute, idx) => (
               <span
-                key={idx}
+                key={idx}  // This key is present but make sure it's unique across renders
                 style={{
                   display: "inline-block",
                   background: "#f2f2f2",
@@ -103,8 +103,9 @@ const UrlAnalysis: React.FC = () => {
         </Box>
         
         <Box padding={{ top: "s" }}>
-          <Button variant="link">Add to Shopping List</Button>
-          <Button variant="link">Find Similar Products</Button>
+          {/* Add keys to these buttons */}
+          <Button key="shopping-list" variant="link">Add to Shopping List</Button>
+          <Button key="similar-products" variant="link">Find Similar Products</Button>
         </Box>
       </div>
     </Cards.Item>
@@ -138,7 +139,7 @@ const UrlAnalysis: React.FC = () => {
             <SpaceBetween direction="horizontal" size="xs">
               {tip.applicableToFoods.map((food, idx) => (
                 <span
-                  key={idx}
+                  key={idx}  // This key is present but make sure it's unique
                   style={{
                     display: "inline-block",
                     background: "#f2f2f2",
@@ -175,17 +176,20 @@ const UrlAnalysis: React.FC = () => {
     >
       <SpaceBetween direction="vertical" size="l">
         <FormField
+          key="url-form-field" // Add this key
           label="Enter URL to analyze"
           description="Provide a URL to a food blog, article, or recipe site"
         >
           <SpaceBetween direction="horizontal" size="xs">
             <Input
+              key="url-input"
               value={url}
               onChange={({ detail }) => setUrl(detail.value)}
               placeholder="https://example.com/best-yogurts-2024"
-              style={{ width: "80%" }}
+              inputWidth="80%"
             />
             <Button
+              key="analyze-button"
               variant="primary"
               onClick={handleUrlAnalysis}
               loading={isLoading}
@@ -197,13 +201,20 @@ const UrlAnalysis: React.FC = () => {
         </FormField>
 
         {error && (
-          <Alert type="error" header="Error">
+          <Alert 
+            key="error-alert" // Add this key
+            type="error" 
+            header="Error"
+          >
             {error}
           </Alert>
         )}
 
         {isLoading && (
-          <div style={{ textAlign: "center", padding: "20px" }}>
+          <div 
+            key="loading-indicator" // Add this key
+            style={{ textAlign: "center", padding: "20px" }}
+          >
             <Spinner size="large" />
             <div style={{ marginTop: "10px" }}>
               Analyzing URL content... This may take a minute.
@@ -212,9 +223,10 @@ const UrlAnalysis: React.FC = () => {
         )}
 
         {analysisResult && (
-          <SpaceBetween direction="vertical" size="l">
+          <SpaceBetween key="results-section" direction="vertical" size="l">
             {analysisResult.summary && (
               <Container
+                key="summary-container" // Add this key
                 header={<Header variant="h2">Summary</Header>}
               >
                 <Box variant="p">{analysisResult.summary}</Box>
@@ -222,6 +234,7 @@ const UrlAnalysis: React.FC = () => {
             )}
 
             <Tabs
+              key="results-tabs" // Add this key
               activeTabId={activeTabId}
               onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
               tabs={[
