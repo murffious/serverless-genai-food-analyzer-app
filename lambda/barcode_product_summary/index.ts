@@ -317,8 +317,7 @@ async function putProductSummaryToDynamoDB(product_code: string, params_hash: st
     }
 }
 
-async function messageHandler (event, responseStream) {
-
+async function messageHandler(event, responseStream) {
     try {
         logger.info(event as any);
 
@@ -326,50 +325,85 @@ async function messageHandler (event, responseStream) {
         const productCode = body.productCode;
         const language = body.language;
 
-        const userPreferenceKeys = Object.keys(body.preferences).filter(key => body.preferences[key]);
-        const userAllergiesKeys = Object.keys(body.allergies).filter(key => body.allergies[key]);
+        // Safely extract preferences and allergies with defaults
+        const preferences = body.preferences || {};
+        const allergies = body.allergies || {};
+        
+        const userPreferenceKeys = Object.keys(preferences).filter(key => preferences[key]);
+        const userAllergiesKeys = Object.keys(allergies).filter(key => allergies[key]);
 
         const userPreferenceString = userPreferenceKeys.join(', ');
         const userAllergiesString = userAllergiesKeys.join(', ');
 
-
+        // Add better error handling for database access
         const [productName, productIngredients, productAdditives] = await getProductFromDb(productCode, language);
-        if (productName && productIngredients) {
-            logger.info("Product found");
-
-
-        } else {
-            logger.error("Product not found in the database");
-            throw new Error('Product not found in the database');
+        
+        if (!productName || !productIngredients) {
+            responseStream.write(JSON.stringify({
+                error: true,
+                message: "Product not found or incomplete data"
+            }));
+            responseStream.end();
+            return;
         }
 
+        // Process ingredients data safely
+        let ingredientsObj;
+        if (typeof productIngredients === 'string') {
+            try {
+                ingredientsObj = JSON.parse(productIngredients);
+            } catch (e) {
+                ingredientsObj = { "Unknown": productIngredients };
+            }
+        } else {
+            ingredientsObj = productIngredients || {};
+        }
+        
         const hashValue = calculateHash(productCode, userAllergiesString, userPreferenceString, language);
 
-        let productSummary = await getProductSummary(productCode, hashValue);
-        if (!productSummary) {        
-            logger.info("Product Summary not found in the database");
-            const ingredientKeys = Object.keys(productIngredients);
-            const ingredientsString = ingredientKeys.join(', ');
+        try {
+            let productSummary = await getProductSummary(productCode, hashValue);
+            
+            if (!productSummary) {
+                logger.info("Product Summary not found in the database");
+                const ingredientKeys = Object.keys(ingredientsObj);
+                const ingredientsString = ingredientKeys.join(', ');
 
-            const promptText = generateProductSummaryPrompt(
-                userAllergiesString,
-                userPreferenceString,
-                ingredientsString,
-                productName,
-                language!
-            );
-            productSummary = await generateSummary(promptText, responseStream);
-            await putProductSummaryToDynamoDB(productCode, hashValue, productSummary);
+                const promptText = generateProductSummaryPrompt(
+                    userAllergiesString,
+                    userPreferenceString,
+                    ingredientsString,
+                    productName,
+                    language
+                );
+                
+                productSummary = await generateSummary(promptText, responseStream);
+                
+                // Only save if we got a valid summary
+                if (productSummary && typeof productSummary === 'string' && productSummary.length > 0) {
+                    await putProductSummaryToDynamoDB(productCode, hashValue, productSummary);
+                }
+            } else {
+                await simulateSummaryStreaming(productSummary, responseStream);
+            }
+            
+            logger.info(`Product Summary: ${productSummary}`);
+        } catch (summaryError) {
+            logger.error("Error generating summary:", summaryError);
+            responseStream.write(JSON.stringify({
+                error: true,
+                message: "Failed to generate product summary"
+            }));
         }
-        else {
-            await simulateSummaryStreaming(productSummary, responseStream)
-
-        }
-        logger.info(`Product Summary: ${productSummary}`);
     } catch (error) {
-        console.error("Error:", error);
+        logger.error("Error:", error);
+        responseStream.write(JSON.stringify({
+            error: true,
+            message: "An unexpected error occurred"
+        }));
+    } finally {
+        // Always ensure stream is ended
+        responseStream.end();
     }
-    responseStream.end();
 }
-
 export const handler = awslambda.streamifyResponse(messageHandler);

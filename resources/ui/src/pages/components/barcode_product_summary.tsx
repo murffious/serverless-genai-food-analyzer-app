@@ -130,8 +130,14 @@ const BarcodeProductSummary: React.FC<BarcodeProductSummaryProps> = ({
         
         setSummaryLoaded(true);
       } catch (error) {
-        console.error("Error fetching summary:", error);
-        setSummaryError(`Failed to get product summary: ${error.message || "Unknown error"}`);
+        console.error("Error getting product summary:", error);
+        
+        // Fix the TypeScript error by properly typing the error
+        if (error instanceof Error) {
+          setSummaryError(`Failed to get product summary: ${error.message}`);
+        } else {
+          setSummaryError("Failed to get product summary. Please try again.");
+        }
       } finally {
         setLoadingSummary(false);
       }

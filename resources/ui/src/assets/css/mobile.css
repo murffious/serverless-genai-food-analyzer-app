@@ -1,0 +1,52 @@
+/* Ensure manual input and error messages are visible on mobile */
+@media (max-width: 768px) {
+  .barcode-container.mobile .product-not-found-wrapper {
+    margin: 16px 0;
+    max-width: 100%;
+    position: relative;
+    z-index: 100;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .barcode-container.mobile .product-not-found-alert {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  .barcode-container.mobile .manual-input-field {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  .barcode-container.mobile .barcode-manual-input {
+    font-size: 16px !important;
+    height: 44px !important;
+  }
+  
+  /* Force visibility of form fields */
+  .awsui-form-field {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  /* Fix input rendering */
+  .awsui-input-container {
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  /* Make buttons more visible */
+  .barcode-container.mobile button {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 10px;
+  }
+}
+
+/* Important styles to ensure things are visible */
+.product-not-found-alert {
+  display: block !important;
+  visibility: visible !important;
+  z-index: 10;
+}

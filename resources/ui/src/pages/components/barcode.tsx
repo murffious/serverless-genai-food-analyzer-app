@@ -9,10 +9,11 @@ import {
   Container,
   Input,
   SpaceBetween,
+  FormField
 } from "@cloudscape-design/components";
 import customTranslations from "../../assets/i18n/all";
 import { DevModeContext, LanguageContext } from "../app";
-
+import "../../assets/css/mobile.css";
 const InputWithButton = ({ value, onChange, onClick, buttonText }) => {
   return (
     <div
@@ -135,14 +136,24 @@ const Barcode: React.FC = () => {
                 }}
               >
                 <SpaceBetween direction="horizontal" size="xs">
-                  <Input
-                    type="text"
-                    placeholder={
-                      currentTranslations["scan_button_number_label"]
-                    }
-                    value={tempProductCode}
-                    onChange={({ detail }) => setTempProductCode(detail.value)}
-                  />
+                  <FormField 
+                    label={currentTranslations["scan_button_number_label"]} // Use the right translation key
+                    className="manual-input-field"
+                  >
+                    <Input
+                      value={tempProductCode}
+                      onChange={({ detail }) => setTempProductCode(detail.value)}
+                      placeholder="0037600138727"
+                      onKeyUp={(e) => {
+                        if (e.key === "Enter") {
+                          handleManualSubmit();
+                        }
+                      }}
+                      autoComplete="off"
+                      className="barcode-manual-input"
+                      __mobileStyling={{ fontSize: '16px', height: '44px', padding: '10px' }}
+                    />
+                  </FormField>
                   <Button onClick={() => setProductCode(tempProductCode)}>
                     OK
                   </Button>

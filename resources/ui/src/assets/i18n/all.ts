@@ -84,6 +84,7 @@ const customTranslations: Record<string, Record<string, string>> = {
     video_analysis_equipment: "Equipment Used",
     video_analysis_tips: "Actionable Tips",
     video_analysis_insights: "Nutritional Insights",
+    manual_input_label: "Enter Barcode Manually",
   },
   french: {
     home_title: "L'application Food Analyzer est une application nutritionnelle personnalisée GenAI pour vos achats et vos recettes de cuisine",
@@ -160,6 +161,7 @@ const customTranslations: Record<string, Record<string, string>> = {
     recipe_proposal_title: "Voici 3 suggestions de recettes générées par l'IA",
     dev_mode_title: "Autre préférences",
     dev_mode_label: "Mode avancé",
+    manual_input_label: "Enter Barcode Manually",
   },
   italian: {
     home_title: "Food Analyzer è un'app nutrizionale personalizzata GenAI per i tuoi acquisti e le tue ricette di cucina",
@@ -236,6 +238,7 @@ const customTranslations: Record<string, Record<string, string>> = {
     recipe_proposal_title: "Ecco 3 proposte di ricette generate dall’IA",
     dev_mode_title: "Altre preferenze",
     dev_mode_label: "Modalità avanzata",
+    manual_input_label: "Enter Barcode Manually",
   },
   spanish: {
     home_title: "La aplicación Food Analyzer es una aplicación nutricional personalizada GenAI para tus compras y recetas de cocina",
@@ -312,6 +315,7 @@ const customTranslations: Record<string, Record<string, string>> = {
       "Aquí tienes 3 sugerencias de recetas generadas por IA",
     dev_mode_title: "Otras preferencias",
     dev_mode_label: "Modo avanzado",
+    manual_input_label: "Enter Barcode Manually",
   },
 };
 

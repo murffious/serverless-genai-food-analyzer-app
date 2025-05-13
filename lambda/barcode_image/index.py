@@ -321,29 +321,55 @@ def handler(event, context):
         product_code = json_body.get("productCode")
         language = json_body.get("language")
 
-        user_preference_data = json_body.get("preferences")
-        user_allergies = json_body.get("allergies")
+        user_preference_data = json_body.get("preferences", {})
+        user_allergies = json_body.get("allergies", {})
 
         product_name, product_ingredients, product_additives = get_product_from_db(product_code, language)
 
         if product_name is not None:
             logger.debug("Product found in the database")
+            # Add data structure validation
+            if isinstance(product_ingredients, str):
+                try:
+                    product_ingredients = json.loads(product_ingredients)
+                except json.JSONDecodeError:
+                    product_ingredients = {"Unknown": product_ingredients}
+            elif not isinstance(product_ingredients, dict):
+                product_ingredients = {"Unknown": str(product_ingredients)}
+                
             hash_value = calculate_hash(product_code, user_allergies, user_preference_data, language)
             image_url = get_image_url(product_code, hash_value)
+            
             if image_url:
                 logger.debug("Image URL exists for the product_code and params_hash.")
             else:
                 logger.debug("Image URL does not exist yet for the product_code and params_hash.")
+                # Safe string conversion for prompt generation
+                ingredients_str = json.dumps(product_ingredients)
                 prompt_text = generate_product_summary_prompt(
-                    user_preference_data, product_ingredients, product_name
+                    user_preference_data=json.dumps(user_preference_data),
+                    product_composition=ingredients_str,
+                    product_name=product_name
                 )
 
-                image_generated_prompt = call_bedrock(prompt_text)
-            
-                base64_image = get_image(image_generated_prompt)
-                image_data = base64.b64decode(base64_image)
-                image_url = upload_image_to_s3(image_data)
-                put_product_image_to_dynamodb(product_code, hash_value, image_url)
+                # Add additional error handling
+                try:
+                    image_generated_prompt = call_bedrock(prompt_text)
+                    base64_image = get_image(image_generated_prompt)
+                    image_data = base64.b64decode(base64_image)
+                    image_url = upload_image_to_s3(image_data)
+                    put_product_image_to_dynamodb(product_code, hash_value, image_url)
+                except Exception as img_error:
+                    logger.error(f"Error generating image: {img_error}")
+                    return {
+                        "statusCode": 500,
+                        "body": json.dumps({"error": "Failed to generate image"}),
+                        "headers": {
+                            "Access-Control-Allow-Headers": "*",
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+                        },
+                    }
 
             response = {"imageUrl": "/" + image_url}
             logger.debug("Response", extra=response)
@@ -357,20 +383,17 @@ def handler(event, context):
                     "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
                 }
             }
-
         else:
             logger.debug("Product not found in the database")
             raise ProductNotFoundException("Product not found.")
     except Exception as e:
-            logger.error("Error:", e)
-            return {
+        logger.error(f"Error: {str(e)}")
+        return {
             "statusCode": 500,
-            "body": json.dumps({"error": "Unwnown error"}),
+            "body": json.dumps({"error": str(e)}),
             "headers": {
                 "Access-Control-Allow-Headers": "*",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
             },
         }
-   
-
