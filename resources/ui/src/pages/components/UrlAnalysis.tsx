@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Container,
-  SpaceBetween,
   Button,
   FormField,
   Input,
@@ -9,18 +8,15 @@ import {
   Header,
   Spinner,
   Tabs,
-  ColumnLayout,
   Box,
   Cards,
-  TagEditor,
-  Icon
 } from "@cloudscape-design/components";
 import { callAPI } from "../../assets/js/custom";
 import { useContext } from "react";
 import { DevModeContext, LanguageContext } from "../app";
 import customTranslations from "../../assets/i18n/all";
 
-const UrlAnalysis: React.FC = () => {
+const UrlAnalysis = () => {
   const language = useContext(LanguageContext);
   const { devMode } = useContext(DevModeContext);
   const currentTranslations = customTranslations[language];
@@ -28,7 +24,7 @@ const UrlAnalysis: React.FC = () => {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [activeTabId, setActiveTabId] = useState("foodItems");
 
   const handleUrlAnalysis = async () => {
@@ -42,14 +38,10 @@ const UrlAnalysis: React.FC = () => {
     setAnalysisResult(null);
 
     try {
-      const body = {
-        url: url
-      };
-
+      const body = { url };
       const response = await callAPI("analyzeUrl", "POST", body);
       setAnalysisResult(response);
       
-      // If no food items but there are tips, switch to tips tab
       if ((!response.foodItems || response.foodItems.length === 0) && 
           response.tips && response.tips.length > 0) {
         setActiveTabId("tips");
@@ -62,107 +54,6 @@ const UrlAnalysis: React.FC = () => {
     }
   };
 
-  const FoodItemCard = ({ item }) => (
-    <Cards.Item>
-      <div>
-        <Box variant="h3">{item.name}</Box>
-        <Box variant="p">{item.description}</Box>
-        
-        <ColumnLayout columns={2}>
-          <div>
-            <Box variant="h5">Why recommended</Box>
-            <Box variant="p">{item.whyRecommended}</Box>
-          </div>
-          
-          {item.whereToFind && (
-            <div>
-              <Box variant="h5">Where to find</Box>
-              <Box variant="p">{item.whereToFind}</Box>
-            </div>
-          )}
-        </ColumnLayout>
-        
-        <Box padding={{ top: "s" }}>
-          <SpaceBetween direction="horizontal" size="xs">
-            {item.attributes.map((attribute, idx) => (
-              <span
-                key={idx}  // This key is present but make sure it's unique across renders
-                style={{
-                  display: "inline-block",
-                  background: "#f2f2f2",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  margin: "0 4px 4px 0",
-                  fontSize: "12px"
-                }}
-              >
-                {attribute}
-              </span>
-            ))}
-          </SpaceBetween>
-        </Box>
-        
-        <Box padding={{ top: "s" }}>
-          {/* Add keys to these buttons */}
-          <Button key="shopping-list" variant="link">Add to Shopping List</Button>
-          <Button key="similar-products" variant="link">Find Similar Products</Button>
-        </Box>
-      </div>
-    </Cards.Item>
-  );
-
-  const TipCard = ({ tip }) => (
-    <Cards.Item>
-      <div>
-        <Box variant="h4">
-          <Icon name="status-info" />
-          <span style={{ marginLeft: "8px" }}>{tip.tip}</span>
-        </Box>
-        
-        <Box padding={{ top: "s" }}>
-          <span
-            style={{
-              display: "inline-block",
-              background: "#f0f7ff",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "12px"
-            }}
-          >
-            {tip.category}
-          </span>
-        </Box>
-        
-        {tip.applicableToFoods && tip.applicableToFoods.length > 0 && (
-          <Box padding={{ top: "s" }}>
-            <Box variant="h5">Applicable to:</Box>
-            <SpaceBetween direction="horizontal" size="xs">
-              {tip.applicableToFoods.map((food, idx) => (
-                <span
-                  key={idx}  // This key is present but make sure it's unique
-                  style={{
-                    display: "inline-block",
-                    background: "#f2f2f2",
-                    padding: "4px 8px",
-                    borderRadius: "4px",
-                    margin: "0 4px 4px 0",
-                    fontSize: "12px"
-                  }}
-                >
-                  {food}
-                </span>
-              ))}
-            </SpaceBetween>
-          </Box>
-        )}
-        
-        <Box padding={{ top: "s" }}>
-          <Button variant="link">Save Tip</Button>
-        </Box>
-      </div>
-    </Cards.Item>
-  );
-
   return (
     <Container
       header={
@@ -174,22 +65,20 @@ const UrlAnalysis: React.FC = () => {
         </Header>
       }
     >
-      <SpaceBetween direction="vertical" size="l">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <FormField
-          key="url-form-field" // Add this key
           label="Enter URL to analyze"
           description="Provide a URL to a food blog, article, or recipe site"
         >
-          <SpaceBetween direction="horizontal" size="xs">
-            <Input
-              key="url-input"
-              value={url}
-              onChange={({ detail }) => setUrl(detail.value)}
-              placeholder="https://example.com/best-yogurts-2024"
-              inputWidth="80%"
-            />
+          <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ width: '80%' }}>
+              <Input
+                value={url}
+                onChange={({ detail }) => setUrl(detail.value)}
+                placeholder="https://example.com/best-yogurts-2024"
+              />
+            </div>
             <Button
-              key="analyze-button"
               variant="primary"
               onClick={handleUrlAnalysis}
               loading={isLoading}
@@ -197,12 +86,11 @@ const UrlAnalysis: React.FC = () => {
             >
               Analyze URL
             </Button>
-          </SpaceBetween>
+          </div>
         </FormField>
 
         {error && (
           <Alert 
-            key="error-alert" // Add this key
             type="error" 
             header="Error"
           >
@@ -211,10 +99,7 @@ const UrlAnalysis: React.FC = () => {
         )}
 
         {isLoading && (
-          <div 
-            key="loading-indicator" // Add this key
-            style={{ textAlign: "center", padding: "20px" }}
-          >
+          <div style={{ textAlign: "center", padding: "20px" }}>
             <Spinner size="large" />
             <div style={{ marginTop: "10px" }}>
               Analyzing URL content... This may take a minute.
@@ -223,10 +108,9 @@ const UrlAnalysis: React.FC = () => {
         )}
 
         {analysisResult && (
-          <SpaceBetween key="results-section" direction="vertical" size="l">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {analysisResult.summary && (
               <Container
-                key="summary-container" // Add this key
                 header={<Header variant="h2">Summary</Header>}
               >
                 <Box variant="p">{analysisResult.summary}</Box>
@@ -234,7 +118,6 @@ const UrlAnalysis: React.FC = () => {
             )}
 
             <Tabs
-              key="results-tabs" // Add this key
               activeTabId={activeTabId}
               onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
               tabs={[
@@ -244,20 +127,61 @@ const UrlAnalysis: React.FC = () => {
                   content: (
                     <div>
                       {analysisResult.foodItems && analysisResult.foodItems.length > 0 ? (
-                        <Cards
+                        <Cards<FoodItem>
                           cardDefinition={{
                             header: item => item.name,
                             sections: [
                               {
                                 id: "description",
-                                content: item => item.description
+                                header: "Description",
+                                content: item => (
+                                  <div>
+                                    <Box variant="p">{item.description}</Box>
+                                    {item.whyRecommended && (
+                                      <div style={{ marginTop: '16px' }}>
+                                        <Box variant="h5">Why recommended</Box>
+                                        <Box variant="p">{item.whyRecommended}</Box>
+                                      </div>
+                                    )}
+                                    
+                                    {item.whereToFind && (
+                                      <div style={{ marginTop: '16px' }}>
+                                        <Box variant="h5">Where to find</Box>
+                                        <Box variant="p">{item.whereToFind}</Box>
+                                      </div>
+                                    )}
+                                    
+                                    {item.attributes && item.attributes.length > 0 && (
+                                      <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {item.attributes.map((attribute, idx) => (
+                                          <span
+                                            key={`attr-${idx}`}
+                                            style={{
+                                              display: "inline-block",
+                                              background: "#f2f2f2",
+                                              padding: "4px 8px",
+                                              borderRadius: "4px",
+                                              fontSize: "12px"
+                                            }}
+                                          >
+                                            {attribute}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
+                                    <div style={{ marginTop: '16px', display: 'flex', gap: '16px' }}>
+                                      <Button variant="link">Add to Shopping List</Button>
+                                      <Button variant="link">Find Similar Products</Button>
+                                    </div>
+                                  </div>
+                                )
                               }
                             ]
                           }}
-                          items={analysisResult.foodItems}
+                          items={analysisResult.foodItems || []}
                           loadingText="Loading food items"
                           variant="full-page"
-                          visibleSections={["description"]}
                           stickyHeader={true}
                           empty={
                             <Box textAlign="center" color="inherit">
@@ -271,7 +195,6 @@ const UrlAnalysis: React.FC = () => {
                             { cards: 1 },
                             { minWidth: 500, cards: 2 }
                           ]}
-                          renderItem={item => <FoodItemCard item={item} />}
                         />
                       ) : (
                         <Alert type="info">
@@ -287,20 +210,51 @@ const UrlAnalysis: React.FC = () => {
                   content: (
                     <div>
                       {analysisResult.tips && analysisResult.tips.length > 0 ? (
-                        <Cards
+                        <Cards<Tip>
                           cardDefinition={{
                             header: item => item.tip,
                             sections: [
                               {
                                 id: "category",
+                                header: "Category",
                                 content: item => item.category
+                              },
+                              {
+                                id: "applicableTo",
+                                header: "Applicable to",
+                                content: item => (
+                                  item.applicableToFoods && item.applicableToFoods.length > 0 ? (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                      {item.applicableToFoods.map((food, idx) => (
+                                        <span
+                                          key={`food-${idx}`}
+                                          style={{
+                                            display: "inline-block",
+                                            background: "#f2f2f2",
+                                            padding: "4px 8px",
+                                            borderRadius: "4px",
+                                            fontSize: "12px"
+                                          }}
+                                        >
+                                          {food}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : null
+                                )
+                              },
+                              {
+                                id: "actions",
+                                content: () => (
+                                  <Button variant="link">Save Tip</Button>
+                                )
                               }
                             ]
                           }}
-                          items={analysisResult.tips}
+                          items={analysisResult.tips || []}
                           loadingText="Loading tips"
                           variant="full-page"
-                          visibleSections={["category"]}
+                          visibleSections={["category", "applicableTo", "actions"]}
                           stickyHeader={true}
                           empty={
                             <Box textAlign="center" color="inherit">
@@ -314,7 +268,6 @@ const UrlAnalysis: React.FC = () => {
                             { cards: 1 },
                             { minWidth: 500, cards: 2 }
                           ]}
-                          renderItem={tip => <TipCard tip={tip} />}
                         />
                       ) : (
                         <Alert type="info">
@@ -326,11 +279,33 @@ const UrlAnalysis: React.FC = () => {
                 }
               ]}
             />
-          </SpaceBetween>
+          </div>
         )}
-      </SpaceBetween>
+      </div>
     </Container>
   );
 };
 
 export default UrlAnalysis;
+
+interface AnalysisResult {
+  summary?: string;
+  foodItems?: FoodItem[];
+  tips?: Tip[];
+}
+
+interface FoodItem {
+  id: string;
+  name: string;
+  description: string;
+  attributes?: string[];
+  whyRecommended?: string;
+  whereToFind?: string;
+}
+
+interface Tip {
+  id: string;
+  tip: string;
+  category: string;
+  applicableToFoods?: string[];
+}
