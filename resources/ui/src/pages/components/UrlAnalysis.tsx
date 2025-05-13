@@ -38,17 +38,31 @@ const UrlAnalysis = () => {
     setAnalysisResult(null);
 
     try {
+      // Use your standard API calling pattern with correct path
       const body = { url };
-      const response = await callAPI("analyzeUrl", "POST", body);
-      setAnalysisResult(response);
       
-      if ((!response.foodItems || response.foodItems.length === 0) && 
-          response.tips && response.tips.length > 0) {
-        setActiveTabId("tips");
+      // Note: You're using "/urlAnalysis" as the CloudFront behavior pattern
+      const response = await callAPI("urlAnalysis", "POST", body);
+      
+      if (response && !response.error) {
+        setAnalysisResult(response);
+        
+        if ((!response.foodItems || response.foodItems.length === 0) && 
+            response.tips && response.tips.length > 0) {
+          setActiveTabId("tips");
+        }
+      } else {
+        throw new Error(response?.error || "Unknown error occurred");
       }
     } catch (error) {
       console.error("Error analyzing URL:", error);
-      setError("Failed to analyze URL. Please try again.");
+      
+      // Fix the TypeScript error by checking the error type
+      if (error instanceof Error) {
+        setError(`Failed to analyze URL: ${error.message}`);
+      } else {
+        setError("Failed to analyze URL. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

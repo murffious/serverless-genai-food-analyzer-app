@@ -830,14 +830,10 @@ export class FoodAnalyzerStack extends Stack {
   // Add behavior to CloudFront distribution
   distribution.addBehavior(
     "/urlAnalysis",
-    new HttpOrigin(Fn.select(2, Fn.split("/", urlContentAnalysisFunctionUrl.url))),
+    new HttpOrigin(this.getURLDomain(urlContentAnalysisFunctionUrl)),
     getBehaviorOptions
   );
 
-  // Export the function URL for reference
-  new CfnOutput(this, "UrlContentAnalysisFunctionUrl", {
-    value: urlContentAnalysisFunctionUrl.url,
-  });
 
   // Expose function as a property of the stack
   this.urlContentAnalysisFunction = urlContentAnalysisFunction;

@@ -1,4 +1,8 @@
 # Food analyzer app
+You're using Lambda Function URLs with IAM authentication
+You have an Edge Function (authFunction) that handles authentication
+CloudFront routes requests to the correct Lambda Function URLs
+You're adding behaviors to the CloudFront distribution to handle these routes
 
 **Food analyzer app** is a personalized GenAI nutritional webapp for your shopping and cooking recipes built with serverless architecture and generative AI capabilities. It was first created as the winner of the AWS Hackathon France 2024 and then introduced as a booth exhibit at the AWS Summit Paris 2024.
 
