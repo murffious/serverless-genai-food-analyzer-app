@@ -86,46 +86,60 @@ const BarcodeProductSummary: React.FC<BarcodeProductSummaryProps> = ({
     const fetchData = async () => {
       setLoadingSummary(true);
       setSummaryLoaded(false);
+      setRecommendation("");
+      
       try {
         const body = {
           productCode: productCode,
           language: language,
-          preferences: JSON.parse(
-            localStorage.getItem("personalPrefCustom") || "{}"
-          ),
-          allergies: JSON.parse(
-            localStorage.getItem("personalPrefAllergies") || "{}"
-          ),
+          preferences: JSON.parse(localStorage.getItem("personalPrefCustom") || "{}"),
+          allergies: JSON.parse(localStorage.getItem("personalPrefAllergies") || "{}"),
         };
-
+  
+        console.log("Fetching summary for product:", productCode);
         const response = await callStreamingAPI("fetchSummary", "POST", body);
-
+        
+        if (!response.body) {
+          throw new Error("Response body is empty");
+        }
+  
         // Process the streaming response
         const reader = response.body.getReader();
         let accumulatedContent = "";
+        
         while (true) {
-          setLoadingSummary(false);
           const { done, value } = await reader.read();
+          
           if (done) {
-            // Stream finished
+            console.log("Stream complete");
             break;
           }
-
-          // Convert the chunk to a string (assuming it's text data)
+          
+          // Process the chunk of data
           const chunkString = new TextDecoder().decode(value);
           accumulatedContent += chunkString;
+          
+          // Update the UI with the accumulated content
           setRecommendation(accumulatedContent);
+          
+          // After receiving first chunk, set loading to false
+          if (loadingSummary) {
+            setLoadingSummary(false);
+          }
         }
+        
         setSummaryLoaded(true);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        setSummaryError("Summary: Error fetching data: " + error);
+        console.error("Error fetching summary:", error);
+        setSummaryError(`Failed to get product summary: ${error.message || "Unknown error"}`);
       } finally {
         setLoadingSummary(false);
       }
     };
-
-    fetchData();
+  
+    if (productCode && language) {
+      fetchData();
+    }
   }, [productCode, language]);
 
   return (

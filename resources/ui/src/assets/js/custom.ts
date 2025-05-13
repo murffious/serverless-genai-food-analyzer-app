@@ -39,11 +39,11 @@ export async function callAPI(resource: string, method: string = "GET", body: an
   }
 }
 export async function callStreamingAPI(resource: string, method: string = "GET", body: any = null): Promise<any> {
-  const result = await fetch("/aws-exports.json");
-  const awsExports = await result.json();
-  const url = `${awsExports.domainName}/${resource}`;
-
   try {
+    const result = await fetch("/aws-exports.json");
+    const awsExports = await result.json();
+    const url = `${awsExports.domainName}/${resource}`;
+
     const headers = await getHeaders();
     const response = await fetch(url, {
       method,
@@ -52,41 +52,20 @@ export async function callStreamingAPI(resource: string, method: string = "GET",
     });
 
     if (!response.ok) {
-      const errorResponse = await response.json();
-      throw new Error(errorResponse.message || "Network response was not ok");
+      // Try to parse error as JSON
+      try {
+        const errorResponse = await response.json();
+        throw new Error(errorResponse.message || `HTTP error ${response.status}: ${response.statusText}`);
+      } catch (jsonError) {
+        // If parsing fails, throw the original error
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
     }
 
-    const reader = response.body?.getReader();
-    const stream = new ReadableStream({
-      start(controller) {
-        // Define the function to pull data from the reader
-        function pull() {
-          reader?.read().then(({ done, value }) => {
-            if (done) {
-              controller.close();
-              return;
-            }
-            // Enqueue the chunk into the stream
-            controller.enqueue(value);
-            // Pull the next chunk
-            pull();
-          }).catch(error => {
-            controller.error(error);
-          });
-        }
-        // Start pulling data
-        pull();
-      }
-    });
-
-    // Create a new response with the streamed body
-    return new Response(stream, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
+    // Return the response directly - no need to create a new one
+    return response;
   } catch (error) {
+    console.error("Error in callStreamingAPI:", error);
     throw error;
   }
 }
-
