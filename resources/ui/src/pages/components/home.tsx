@@ -38,6 +38,9 @@ export function Home() {
           <Button variant="primary" onClick={() => navigate("/recipe")}>
             {customTranslations[language].menu_recipe}
           </Button>
+          <Button variant="primary" onClick={() => navigate("/analysis")}>
+            {customTranslations[language].menu_analysis}
+          </Button>
           <Button variant="primary" onClick={() => navigate("/preference")}>
             {customTranslations[language].menu_preferences}
           </Button>

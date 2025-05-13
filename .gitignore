@@ -16,3 +16,5 @@ resources/ui/public/aws-exports.json
 resources/ui/dist
 
 .DS_Store
+.env
+*.log

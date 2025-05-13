@@ -12,6 +12,7 @@ import Preferences from "./components/preferences";
 import { useState, useEffect } from "react";
 import Recipe from "./components/recipe";
 import { Home } from "./components/home";
+import UrlAnalysis from "./components/UrlAnalysis";
 
 function setCookie(value: string) {
   let expires = "";
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="barcode" element={<Barcode />} />
                 <Route path="recipe" element={<Recipe />} />
+                <Route path="analysis" element={<UrlAnalysis />} />
                 <Route path="preference" element={<Preferences />} />
               </Routes>
             }

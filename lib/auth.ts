@@ -28,7 +28,6 @@ export class Auth extends Construct {
       signInAliases: {
         email: true,
       },
-      advancedSecurityMode: cognito.AdvancedSecurityMode.ENFORCED,
     });
 
     new CfnOutput(this, "UserPool", {
