@@ -178,32 +178,43 @@ export class FoodAnalyzerDashBoard extends Construct {
       markdown: "\n\n## AWS Lambda"
     })
     dashboard.addWidgets(new Row(lambdaSectionWidget))
-    const invokedLambdaMetrics = props.functionList.map((invokedLambda) => {
-      return invokedLambda.metricInvocations({
-        period: Duration.days(1),
-        statistic: "Sum"
-      })
-    })
+    // Extract just the invocation metrics (which are IMetric objects)
+    const invocationMetrics = (props.functionList || [])
+      .filter(Boolean)
+      .map(lambda => lambda.metricInvocations());
 
     const invokedLambdaWidget = new SingleValueWidget({
-      // ...
       width: 12,
       height: 6,
       title: "Lambda Invocation",
       region: Stack.of(this).region,
-      metrics: invokedLambdaMetrics,
+      metrics: invocationMetrics,  // This is now an array of IMetric
       start: "-PT72H",
       sparkline: true
     });
 
 
+    const errorMetrics = (props.functionList || [])
+      .filter(Boolean)
+      .map(lambda => lambda.metricErrors());
 
+    const lambdaErrorWidget = new SingleValueWidget({
+      width: 12,
+      height: 6,
+      title: "Lambda Errors",
+      region: Stack.of(this).region,
+      metrics: errorMetrics,
+      start: "-PT72H",
+      sparkline: true
+    });
 
-    const durationLambdaMetrics = props.functionList.map((invokedLambda) => {
-      return invokedLambda.metricDuration({
-        period: Duration.seconds(60)
-      })
-    })
+    const durationLambdaMetrics = (props.functionList || [])
+      .filter(Boolean)
+      .map((invokedLambda) => {
+        return invokedLambda.metricDuration({
+          period: Duration.seconds(60)
+        });
+      });
 
     const lambdaDurationWidget  = new GraphWidget({
       // ...
@@ -219,6 +230,25 @@ export class FoodAnalyzerDashBoard extends Construct {
     })
 
     dashboard.addWidgets(new Row(invokedLambdaWidget,lambdaDurationWidget))
+
+    // Or use a GraphWidget which supports left/right metrics
+    const lambdaInvocationsWidget = new GraphWidget({
+      width: 12,
+      height: 6,
+      title: "Lambda Invocation and Errors",
+      region: Stack.of(this).region,
+      left: (props.functionList || [])
+        .filter(Boolean)
+        .map(lambda => lambda.metricInvocations()),
+      right: (props.functionList || [])
+        .filter(Boolean)
+        .map(lambda => lambda.metricErrors()),
+      view: GraphWidgetView.TIME_SERIES,
+      stacked: false,
+      legendPosition: LegendPosition.RIGHT
+    });
+
+    dashboard.addWidgets(new Row(lambdaInvocationsWidget))
 
   }
 }
