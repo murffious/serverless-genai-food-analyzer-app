@@ -156,14 +156,13 @@ const Barcode: React.FC = () => {
                       value={tempProductCode}
                       onChange={({ detail }) => setTempProductCode(detail.value)}
                       placeholder="0037600138727"
-                      onKeyUp={(e) => {
-                        if (e.key === "Enter") {
-                          handleManualSubmit();
+                      onKeyUp={({ detail }) => {
+                        if (detail.key === "Enter") {
+                          setProductCode(tempProductCode);
                         }
                       }}
                       autoComplete="off"
                       className="barcode-manual-input"
-                      __mobileStyling={{ fontSize: '16px', height: '44px', padding: '10px' }}
                     />
                   </FormField>
                   <Button onClick={() => setProductCode(tempProductCode)}>

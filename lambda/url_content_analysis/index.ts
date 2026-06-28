@@ -60,7 +60,7 @@ async function fetchUrlContent(url: string): Promise<string> {
     return `Title: ${title}\n\nContent: ${content}`;
   } catch (error) {
     logger.error('Error fetching URL content', { error, url });
-    throw new Error(`Failed to fetch content from URL: ${error.message}`);
+    throw new Error(`Failed to fetch content from URL: ${(error as Error).message}`);
   }
 }
 
@@ -223,8 +223,8 @@ export const handler: Handler = async (event: APIGatewayProxyEventV2) => {
     const analysisResult = await analyzeContent(content);
     
     // Save food items and tips to DynamoDB (if any)
-    let foodItemIds = [];
-    let tipIds = [];
+    let foodItemIds: string[] = [];
+    let tipIds: string[] = [];
     
     if (analysisResult.foodItems && analysisResult.foodItems.length > 0) {
       foodItemIds = await saveFoodItems(analysisResult.foodItems, url);
@@ -254,7 +254,7 @@ export const handler: Handler = async (event: APIGatewayProxyEventV2) => {
     
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error', message: error.message }),
+      body: JSON.stringify({ error: 'Internal server error', message: (error as Error).message }),
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',

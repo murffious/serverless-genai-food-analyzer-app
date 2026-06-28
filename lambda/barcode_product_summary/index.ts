@@ -449,44 +449,42 @@ async function messageHandler (event: APIGatewayProxyEventV2, responseStream: No
         
         const hashValue = calculateHash(productCode, userAllergiesString, userPreferenceString, language);
 
-        try {
-            let productSummary = await getProductSummary(productCode, hashValue);
-            
-            if (!productSummary) {
-                logger.info("Product Summary not found in the database");
-                const ingredientKeys = Object.keys(ingredientsObj);
-                const ingredientsString = ingredientKeys.join(', ');
+        let productSummary = await getProductSummary(productCode, hashValue);
 
-                const promptText = generateProductSummaryPrompt(
-                    userAllergiesString,
-                    userPreferenceString,
-                    userHealthGoal,
-                    userReligion,
-                    ingredientsString,
-                    productName,
-                    productAllergens || [],
-                    productNutriments || {},
-                    productLabels || [],
-                    productCategories || '',
-                    language!,
-                    nova_group || undefined,
-                    nutriscore_grade || undefined,
-                    ecoscore_grade || undefined,
-                    brands || undefined
-                );
-                productSummary = await generateSummary(promptText, responseStream);
-                // Only save if we got a valid summary
-                if (productSummary && typeof productSummary === 'string' && productSummary.length > 0) {
-                    await putProductSummaryToDynamoDB(productCode, hashValue, productSummary);
-                }
-            } else {
-                await simulateSummaryStreaming(productSummary, responseStream);
+        if (!productSummary) {
+            logger.info("Product Summary not found in the database");
+            const ingredientKeys = Object.keys(ingredientsObj);
+            const ingredientsString = ingredientKeys.join(', ');
+
+            const promptText = generateProductSummaryPrompt(
+                userAllergiesString,
+                userPreferenceString,
+                userHealthGoal,
+                userReligion,
+                ingredientsString,
+                productName,
+                productAllergens || [],
+                productNutriments || {},
+                productLabels || [],
+                productCategories || '',
+                language!,
+                nova_group || undefined,
+                nutriscore_grade || undefined,
+                ecoscore_grade || undefined,
+                brands || undefined
+            );
+            productSummary = await generateSummary(promptText, responseStream);
+            // Only save if we got a valid summary
+            if (productSummary && typeof productSummary === 'string' && productSummary.length > 0) {
+                await putProductSummaryToDynamoDB(productCode, hashValue, productSummary);
             }
-            
-            logger.info(`Product Summary: ${productSummary}`);
+        } else {
+            await simulateSummaryStreaming(productSummary, responseStream);
         }
+
+        logger.info(`Product Summary: ${productSummary}`);
     } catch (error) {
-        logger.error("Error:", error);
+        logger.error("Error:", error as Error);
         responseStream.write(JSON.stringify({
             error: true,
             message: "An unexpected error occurred"
